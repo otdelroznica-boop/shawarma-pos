@@ -18,6 +18,7 @@ import BoardScreen from './components/BoardScreen';
 import StaffPage from './components/StaffPage';
 import { ToastProvider } from './components/ui';
 import { resetDemo } from './demo/mockApi';
+import { clearStoredCart, useCart } from './lib/cart';
 import { api, IS_DEMO, clearSession, getStoredUser, getToken, UNAUTHORIZED_EVENT, type User } from './api';
 
 type Page = 'cashier' | 'queue' | 'products' | 'reports' | 'staff';
@@ -37,6 +38,7 @@ function Shell() {
   const [user, setUser] = useState<User | null>(getToken() ? getStoredUser() : null);
   const [page, setPage] = useState<Page>(() => (localStorage.getItem(PAGE_KEY) as Page) || 'cashier');
   const [queueCount, setQueueCount] = useState(0);
+  const [cart, setCart] = useCart();
   const now = useClock();
 
   const go = (p: Page) => {
@@ -84,8 +86,8 @@ function Shell() {
   }
 
   const isAdmin = user.role === 'admin';
-  const nav: { id: Page; label: string; icon: LucideIcon; badge?: number; admin?: boolean }[] = [
-    { id: 'cashier', label: 'Касса', icon: ShoppingBasket },
+  const nav: { id: Page; label: string; icon: LucideIcon; badge?: number; admin?: boolean; draft?: boolean }[] = [
+    { id: 'cashier', label: 'Касса', icon: ShoppingBasket, badge: cart.length, draft: true },
     { id: 'queue', label: 'Кухня', icon: ChefHat, badge: queueCount },
     { id: 'products', label: 'Товары', icon: Package },
     { id: 'reports', label: 'Отчёты', icon: ChartColumn },
@@ -94,6 +96,9 @@ function Shell() {
   const current = nav.find(n => n.id === page && (!n.admin || isAdmin)) ? page : 'cashier';
 
   const logout = () => {
+    if (cart.length && !confirm('В кассе набран непробитый чек. Выйти и удалить его?')) return;
+    setCart([]);
+    clearStoredCart();
     clearSession();
     setUser(null);
   };
@@ -131,7 +136,10 @@ function Shell() {
                   <n.icon size={21} className={active ? 'text-brand-400' : ''} />
                   <span>{n.label}</span>
                   {!!n.badge && (
-                    <span className="absolute right-2 top-1.5 min-w-[20px] rounded-full bg-brand-500 px-1.5 text-center text-[11px] font-bold leading-5 text-white xl:static xl:ml-auto">
+                    <span
+                      title={n.draft ? 'Чек набран, но не пробит' : undefined}
+                      className={`absolute right-2 top-1.5 min-w-[20px] rounded-full px-1.5 ${n.draft ? 'bg-white text-ink-900' : 'bg-brand-500 text-white'} text-center text-[11px] font-bold leading-5 xl:static xl:ml-auto`}
+                    >
                       {n.badge}
                     </span>
                   )}
@@ -192,7 +200,7 @@ function Shell() {
 
       {/* ─── Рабочая область ─── */}
       <main className="min-w-0 flex-1 overflow-hidden">
-        {current === 'cashier' && <CashierScreen onGoToQueue={() => go('queue')} />}
+        {current === 'cashier' && <CashierScreen cart={cart} setCart={setCart} onGoToQueue={() => go('queue')} />}
         {current === 'queue' && <QueuePage onQueueCountChange={setQueueCount} />}
         {current === 'products' && <ProductsPage canEdit={isAdmin} />}
         {current === 'reports' && <SalesReport />}

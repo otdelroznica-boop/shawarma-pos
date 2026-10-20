@@ -146,6 +146,7 @@ export function resetDemo() {
   localStorage.removeItem(KEY);
   localStorage.removeItem('token');
   localStorage.removeItem('user');
+  localStorage.removeItem('pos:cart');
   location.reload();
 }
 

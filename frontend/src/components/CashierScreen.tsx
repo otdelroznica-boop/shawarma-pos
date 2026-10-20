@@ -17,22 +17,14 @@ import { categoryStyle, hasModifiers, sortByCategory, SHAWARMA_TOPPINGS, SNACK_S
 import { num, orderNo, plural, rub } from '../lib/format';
 import { Empty, Modal, useToast } from './ui';
 import { Receipt, usePrint } from './Receipt';
-
-interface CartItem {
-  cartId: string; // каждая штука — отдельная строка, кухня отмечает их по одной
-  productId: number;
-  name: string;
-  category: string;
-  finalPrice: number;
-  notes?: string;
-}
+import { newCartId, type CartItem } from '../lib/cart';
 
 interface Props {
+  cart: CartItem[];
+  setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
   onGoToQueue?: () => void;
 }
 
-let cartSeq = 0;
-const newCartId = () => `c${++cartSeq}`;
 
 // ─── Окно добавок / соуса / напитка ─────────────────────────────────────────
 function ModifiersModal({
@@ -306,11 +298,10 @@ function PaymentModal({
 }
 
 // ─── Экран кассы ─────────────────────────────────────────────────────────────
-export default function CashierScreen({ onGoToQueue }: Props) {
+export default function CashierScreen({ cart, setCart, onGoToQueue }: Props) {
   const toast = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Все');
   const [modProduct, setModProduct] = useState<Product | null>(null);
