@@ -1,0 +1,60 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Product {
+  id        Int        @id @default(autoincrement())
+  name      String
+  price     Decimal
+  cost      Decimal
+  stock     Int
+  category  String     @default("Прочее")
+  archived  Boolean    @default(false) // скрыт из кассы, история продаж сохраняется
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  SaleItem  SaleItem[]
+}
+
+model Sale {
+  id            Int        @id @default(autoincrement())
+  number        Int        @default(0) // номер заказа за день (1, 2, 3...), его называют гостю
+  total         Decimal
+  paymentMethod String     @default("cash") // cash | card
+  cashReceived  Decimal?
+  closed        Boolean    @default(false)
+  startedAt     DateTime?
+  readyAt       DateTime?
+  closedAt      DateTime?
+  createdAt     DateTime   @default(now())
+  userId        Int
+  user          User       @relation(fields: [userId], references: [id])
+  items         SaleItem[]
+}
+
+model SaleItem {
+  id           Int     @id @default(autoincrement())
+  quantity     Int
+  deliveredQty Int     @default(0)
+  price        Decimal
+  notes        String?
+  product      Product @relation(fields: [productId], references: [id])
+  productId    Int
+  sale         Sale    @relation(fields: [saleId], references: [id])
+  saleId       Int
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  password  String
+  role      String   @default("cashier") // admin or cashier
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sales     Sale[]
+}
